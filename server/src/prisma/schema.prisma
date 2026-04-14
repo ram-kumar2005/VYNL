@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String      @id @default(cuid())
+  googleId  String      @unique
+  name      String
+  email     String      @unique
+  avatar    String?
+  createdAt DateTime    @default(now())
+  playlists Playlist[]
+  likes     Like[]
+  history   PlayHistory[]
+}
+
+model Playlist {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  isPublic    Boolean        @default(false)
+  coverUrl    String?
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  songs       PlaylistSong[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model PlaylistSong {
+  id         String   @id @default(cuid())
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  youtubeId  String
+  title      String
+  artist     String
+  thumbnail  String
+  duration   String
+  addedAt    DateTime @default(now())
+
+  @@unique([playlistId, youtubeId])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  youtubeId String
+  title     String
+  artist    String
+  thumbnail String
+  duration  String
+  likedAt   DateTime @default(now())
+
+  @@unique([userId, youtubeId])
+}
+
+model PlayHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  youtubeId String
+  title     String
+  artist    String
+  thumbnail String
+  playedAt  DateTime @default(now())
+}
