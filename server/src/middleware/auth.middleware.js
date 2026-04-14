@@ -2,7 +2,10 @@ import jwt from 'jsonwebtoken'
 import { prisma } from '../app.js'
 
 export async function authenticateJWT(req, res, next) {
-  const token = req.cookies?.vynl_token
+  const bearer = req.headers.authorization?.startsWith('Bearer ')
+    ? req.headers.authorization.slice(7)
+    : null
+  const token = req.cookies?.vynl_token || bearer
   if (!token) return res.status(401).json({ error: 'Not authenticated' })
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'vynl_super_secret_jwt_key')

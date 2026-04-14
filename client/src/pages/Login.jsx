@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore.js'
+import { setAuthToken } from '../utils/api.js'
 
 const notes = ['🎵', '🎶', '🎸', '🎹', '🎺', '🎻', '🥁', '🎷']
 
@@ -23,6 +24,13 @@ export default function Login() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+    if (token) {
+      setAuthToken(token)
+      window.history.replaceState({}, '', '/login')
+    }
+
     fetchUser().then(() => {
       const u = useAuthStore.getState().user
       if (u) navigate('/', { replace: true })

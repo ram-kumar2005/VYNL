@@ -27,7 +27,11 @@ router.get('/google/callback',
       // Vercel (frontend) <-> Render (API) is cross-site in prod.
       sameSite: isProduction ? 'none' : 'lax'
     })
-    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/`)
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+    const redirectUrl = new URL('/login', clientUrl)
+    // Fallback for browsers that block third-party cookies (e.g. Safari).
+    redirectUrl.searchParams.set('token', token)
+    res.redirect(redirectUrl.toString())
   }
 )
 

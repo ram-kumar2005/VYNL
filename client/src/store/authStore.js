@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import api from '../utils/api.js'
+import api, { setAuthToken } from '../utils/api.js'
 
 export const useAuthStore = create(persist((set, get) => ({
   user: null,
@@ -19,6 +19,7 @@ export const useAuthStore = create(persist((set, get) => ({
     try {
       await api.post('/auth/logout')
     } catch {}
+    setAuthToken(null)
     set({ user: null })
     window.location.href = '/login'
   },
