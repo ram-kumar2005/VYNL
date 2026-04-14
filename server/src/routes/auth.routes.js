@@ -19,11 +19,13 @@ router.get('/google/callback',
       process.env.JWT_SECRET || 'vynl_super_secret_jwt_key',
       { expiresIn: '7d' }
     )
+    const isProduction = process.env.NODE_ENV === 'production'
     res.cookie('vynl_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: 'lax'
+      // Vercel (frontend) <-> Render (API) is cross-site in prod.
+      sameSite: isProduction ? 'none' : 'lax'
     })
     res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/`)
   }
