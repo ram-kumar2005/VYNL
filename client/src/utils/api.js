@@ -4,7 +4,8 @@ const TOKEN_KEY = 'vynl_token'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
-  withCredentials: true
+  withCredentials: true,
+  timeout: 12000
 })
 
 export function setAuthToken(token) {

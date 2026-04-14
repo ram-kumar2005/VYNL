@@ -4,6 +4,7 @@ import { getCache, setCache } from './redis.service.js'
 
 const YT_BASE = 'https://www.googleapis.com/youtube/v3'
 const API_KEY = process.env.YOUTUBE_API_KEY
+const REQUEST_TIMEOUT_MS = 10000
 
 const LANGUAGE_KEYWORDS = {
   tamil: 'tamil song',
@@ -27,6 +28,7 @@ export async function searchSongs(query, lang = 'all', maxResults = 20) {
   try {
     if (!API_KEY) throw new Error('YOUTUBE_API_KEY missing')
     const searchRes = await axios.get(`${YT_BASE}/search`, {
+      timeout: REQUEST_TIMEOUT_MS,
       params: {
         part: 'snippet',
         q: fullQuery,
@@ -42,6 +44,7 @@ export async function searchSongs(query, lang = 'all', maxResults = 20) {
 
     const ids = items.map(i => i.id.videoId).join(',')
     const detailRes = await axios.get(`${YT_BASE}/videos`, {
+      timeout: REQUEST_TIMEOUT_MS,
       params: { part: 'contentDetails,statistics', id: ids, key: API_KEY }
     })
 
@@ -60,17 +63,24 @@ export async function searchSongs(query, lang = 'all', maxResults = 20) {
     }))
   } catch (err) {
     // Fallback when YouTube Data API key is invalid/restricted/quota-exceeded.
-    const fallback = await yts.search({ query: fullQuery, pages: 1 })
-    results = (fallback?.videos || [])
-      .slice(0, maxResults)
-      .map(item => ({
-        youtubeId: item.videoId,
-        title: item.title,
-        artist: item.author?.name || 'Unknown artist',
-        thumbnail: item.thumbnail,
-        duration: item.timestamp || formatSeconds(item.seconds || 0),
-        language: lang
-      }))
+    try {
+      const fallback = await Promise.race([
+        yts.search({ query: fullQuery, pages: 1 }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Fallback search timeout')), REQUEST_TIMEOUT_MS))
+      ])
+      results = (fallback?.videos || [])
+        .slice(0, maxResults)
+        .map(item => ({
+          youtubeId: item.videoId,
+          title: item.title,
+          artist: item.author?.name || 'Unknown artist',
+          thumbnail: item.thumbnail,
+          duration: item.timestamp || formatSeconds(item.seconds || 0),
+          language: lang
+        }))
+    } catch {
+      results = []
+    }
   }
 
   await setCache(cacheKey, results, 3600)
